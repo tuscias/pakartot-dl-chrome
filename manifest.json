@@ -1,14 +1,18 @@
 {
   "manifest_version": 2,
-  "name": "Pakartot.lt Downloader",
-  "version": "0.1",
+  "name": "Siųsk iš Pakartot.lt",
+  "version": "0.4",
   "author": "Tuscias",
-  "description": "Download music from https://www.pakartot.lt/ website",
+  "description": "Atsisiųsk dainą ar net visą albumą iš https://www.pakartot.lt",
   "content_scripts": [{
-    "matches": ["https://www.pakartot.lt/album/*"],
-    "js": ["lib/jquery-2.2.4.min.js", "lib/FileSaver.min.js", "lib/URI.js", "lib/jszip.min.js", "content.js"]
+    "matches": ["https://www.pakartot.lt/*"],
+    "js": ["lib/jquery-2.2.4.min.js", "lib/FileSaver.min.js", "lib/jszip.min.js", "lib/id3writer.js", "content.js"]
   }],
-  "permissions": ["https://stream1.pakartot.lt/"],
+ "background": {
+    "scripts": ["event.js"],
+    "persistent": false
+  },
+  "permissions": ["tabs", "https://api.pakartot.lt/", "https://stream1.pakartot.lt/"],
   "icons": {
     "128": "images/icon.png"
   },
