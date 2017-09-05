@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Siųsk iš Pakartot.lt",
-  "version": "0.4",
+  "version": "0.4.1",
   "author": "Tuscias",
   "description": "Atsisiųsk dainą ar net visą albumą iš https://www.pakartot.lt",
   "content_scripts": [{
@@ -12,7 +12,7 @@
     "scripts": ["event.js"],
     "persistent": false
   },
-  "permissions": ["tabs", "https://api.pakartot.lt/", "https://stream1.pakartot.lt/"],
+  "permissions": ["tabs", "https://stream1.pakartot.lt/"],
   "icons": {
     "128": "images/icon.png"
   },

@@ -65,14 +65,14 @@ function downloadAlbum(event) {
     var dlPromises = [];
 
     for (var i = 0; i < tracks.length; i++) {
-        var filename = ('0' + (i+1)).slice(-2) + '_' + slugify(tracks[i]['performers']) +'_' + slugify(tracks[i]['track_name']) + '.mp3';
+        var filename = ('0' + (i+1)).slice(-2) + '_' + slugify(tracks[i]['artist']) +'_' + slugify(tracks[i]['title']) + '.mp3';
 
         dlPromises.push(doDownload(tracks[i]['filename'], filename, tracks[i]));
     };
 
     var zip = new JSZip();
-    var artist = albumInfo['album']['performers'];
-    var albumName = albumInfo['album']['album_name'];
+    var artist = albumInfo['album']['artist'];
+    var albumName = albumInfo['album']['title'];
     var zipfileName = slugify(artist) + '_' + slugify(albumName) + '.zip';
 
     Promise.all(dlPromises).then(function(values) {
@@ -101,10 +101,10 @@ function downloadTrack(event) {
     var tracks = albumInfo['tracks'];
 
     for (var i = 0; i < tracks.length; i++) {
-        if (tracks[i]['track_id'] != trackId)
+        if (tracks[i]['tid'] != trackId)
             continue;
 
-        var filename = slugify(albumInfo['album']['performers']) + '_' + slugify(tracks[i]['track_name']) + '.mp3';
+        var filename = slugify(albumInfo['album']['artist']) + '_' + slugify(tracks[i]['title']) + '.mp3';
         doDownload(tracks[i]['filename'], filename).then(function (item) {
             var tags = makeTrackTags(tracks[i]);
 
@@ -124,33 +124,24 @@ function getAlbumInfo(albumId) {
     var baseParams = {username: 'publicUSR', password: 'vka3qaGHowofKcRdTeiV'};
 
     return new Promise((resolve, reject) => {
-        var params = {url: 'album', id: albumId};
-
-        for (var attrname in baseParams) {
-            params[attrname] = baseParams[attrname];
-        }
-
-        $.post('https://api.pakartot.lt/', params, response => {
+        $.post('https://www.pakartot.lt/api/backend/frontend/player/play.php', {type:'aid', id: albumId}, function (response) {
             var albumData = $.parseJSON(response);
+            albumData['tracks'] = albumData['info'];
+            delete albumData.info;
+            delete albumData.result;
 
-            var params = {url: 'play', action:'album', id: albumId};
-            for (var attrname in baseParams) {
-                params[attrname] = baseParams[attrname];
-            }
+            for (var i = 0; i < albumData['tracks'].length; i++) {
+                albumData['tracks'][i]['track_order'] = i + 1;
+                albumData['tracks'][i]['artist'] = albumData['tracks'][i]['artist'].trim();
+            };
 
-            $.post('https://api.pakartot.lt/', params, response => {
-                var tracksData = $.parseJSON(response);
+            albumData['album'] = {album_id: albumId};
+            albumData['album']['title'] = $('div.main-title').children().first().text().trim();
+            albumData['album']['year'] = $('div.left_column_c').children().last().text().trim();
+            albumData['album']['artist'] = $('div.greytitle').text().trim().replace('\n\r','');
+            albumData['album']['photo_path'] = $('div.item-cover > img').attr('src');
 
-                for (var i = 0; i < tracksData['tracks'].length; i++) {
-                    for (var j = 0; j < albumData['tracks'].length; j++) {
-                        if (albumData['tracks'][j]['track_id'] == tracksData['tracks'][i]['tid']) {
-                            albumData['tracks'][j]['filename'] = tracksData['tracks'][i]['filename'].replace('api.php', 'mp3.php');
-                            break;
-                        }
-                    }
-                }
-                resolve(albumData);
-            });
+            resolve(albumData);
         });
     });
 }
@@ -174,12 +165,12 @@ function convertBlobToArrayBuffer(blob) {
 
 function makeTrackTags(trackInfo) {
     return {
-        'TALB': albumInfo['album']['album_name'],
-        'TPE1': [trackInfo['performers']],
-        'TIT2': trackInfo['track_name'],
-        'TLEN': trackInfo['track_length'] + '000',
-        'TYER': trackInfo['track_year'],
-        'TRCK': trackInfo['album_track_order'] + '/' + albumInfo['tracks'].length,
+        'TALB': albumInfo['album']['title'],
+        'TPE1': [trackInfo['artist']],
+        'TIT2': trackInfo['title'],
+        'TLEN': trackInfo['length'] + '000',
+        'TYER': albumInfo['year'],
+        'TRCK': trackInfo['track_order'] + '/' + albumInfo['tracks'].length,
         'WCOP': 'Lietuvos gretutinių teisių asociacija AGATA',
         'COMM': {'description': 'Šaltinis: https://wwww.pakartot.lt', 'text': 'Šaltinis: https://wwww.pakartot.lt'}
     }
@@ -222,13 +213,13 @@ function doDownload(url, filename, info, done) {
     });
 }
 
-function slugify(text)
-{
+function slugify(text) {
   return text.toString().toLowerCase()
-    .replace(/^\s+|\s+$/g, '')        // .strip()
+    .trim()
     .replace(/\s+/g, '-')           // Replace spaces with -
-    //.replace(/[^\w\-]+/g, '')       // Remove all non-word chars
-    //.replace(/\-\-+/g, '-')         // Replace multiple - with single -
+    .replace('\/', '-')
+    .replace('\\', '-')
+    .replace(/\-\-+/g, '-')         // Replace multiple - with single -
     .replace(/^-+/, '')             // Trim - from start of text
     .replace(/-+$/, '');            // Trim - from end of text
 }
